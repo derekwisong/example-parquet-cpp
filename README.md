@@ -1,4 +1,4 @@
-# parquet-cpp
+# example-parquet-cpp
 
 An example of how to write a parquet file from C++ using Apache Arrow.
 
