@@ -10,7 +10,8 @@ namespace {
 
 // Build an Arrow array from a vector of values
 template <typename Builder, typename Container>
-std::shared_ptr<arrow::Array> build_array(Builder builder, const Container& data) {
+std::shared_ptr<arrow::Array> build_array(const Container& data) {
+    Builder builder;
     arrow::Status status = builder.AppendValues(data);
     if (!status.ok()) {
         std::cerr << "Error appending values: " << status.ToString() << std::endl;
@@ -62,10 +63,10 @@ int main() {
 
     // Create a vector of column arrays
     arrow::ArrayVector columns({
-        build_array(arrow::Int64Builder(), int_values),
-        build_array(arrow::DoubleBuilder(), double_values),
-        build_array(arrow::StringBuilder(), string_values),
-        build_array(arrow::BooleanBuilder(), bool_values),
+        build_array<arrow::Int64Builder>(int_values),
+        build_array<arrow::DoubleBuilder>(double_values),
+        build_array<arrow::StringBuilder>(string_values),
+        build_array<arrow::BooleanBuilder>(bool_values),
     });
 
     // Create a table from the schema and columns
@@ -77,6 +78,10 @@ int main() {
 
     // Write the table to a Parquet file
     constexpr auto file_name = "output.parquet";
-    write_parquet(*table, file_name);
-    std::cerr << "Parquet file written to: " << file_name << std::endl;
+    if (write_parquet(*table, file_name)) {
+        std::cerr << "Parquet file written successfully." << std::endl;
+    } else {
+        std::cerr << "Failed to write Parquet file." << std::endl;
+        return 1;
+    }
 }
