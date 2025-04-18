@@ -8,81 +8,9 @@
 
 namespace {
 
-// An arrow::Array is needed for each column in the table.
-// The following to_chunked_array function templates convert a vector of data
-// into an arrow::Array. The function is specialized for different data types.
-
-template <typename T> std::shared_ptr<arrow::Array> to_array(const std::vector<T>& data) {
-    static_assert(false, "Unimplemented type");
-    return nullptr;
-}
-
-template <> std::shared_ptr<arrow::Array> to_array<std::string>(const std::vector<std::string>& data) {
-    arrow::StringBuilder builder;
-    arrow::Status status = builder.AppendValues(data);
-    if (!status.ok()) {
-        std::cerr << "Error appending values: " << status.ToString() << std::endl;
-        return nullptr;
-    }
-    std::shared_ptr<arrow::Array> array;
-    status = builder.Finish(&array);
-    if (!status.ok()) {
-        std::cerr << "Error finishing builder: " << status.ToString() << std::endl;
-        return nullptr;
-    }
-    return array;
-}
-
-template <> std::shared_ptr<arrow::Array> to_array<bool>(const std::vector<bool>& data) {
-    arrow::BooleanBuilder builder;
-    arrow::Status status = builder.AppendValues(data);
-    if (!status.ok()) {
-        std::cerr << "Error appending values: " << status.ToString() << std::endl;
-        return nullptr;
-    }
-    std::shared_ptr<arrow::Array> array;
-    status = builder.Finish(&array);
-    if (!status.ok()) {
-        std::cerr << "Error finishing builder: " << status.ToString() << std::endl;
-        return nullptr;
-    }
-    return array;
-}
-
-template <> std::shared_ptr<arrow::Array> to_array<double>(const std::vector<double>& data) {
-    arrow::DoubleBuilder builder;
-    arrow::Status status = builder.AppendValues(data);
-    if (!status.ok()) {
-        std::cerr << "Error appending values: " << status.ToString() << std::endl;
-        return nullptr;
-    }
-    std::shared_ptr<arrow::Array> array;
-    status = builder.Finish(&array);
-    if (!status.ok()) {
-        std::cerr << "Error finishing builder: " << status.ToString() << std::endl;
-        return nullptr;
-    }
-    return array;
-}
-
-template <> std::shared_ptr<arrow::Array> to_array<uint64_t>(const std::vector<uint64_t>& data) {
-    arrow::UInt64Builder builder;
-    arrow::Status status = builder.AppendValues(data);
-    if (!status.ok()) {
-        std::cerr << "Error appending values: " << status.ToString() << std::endl;
-        return nullptr;
-    }
-    std::shared_ptr<arrow::Array> array;
-    status = builder.Finish(&array);
-    if (!status.ok()) {
-        std::cerr << "Error finishing builder: " << status.ToString() << std::endl;
-        return nullptr;
-    }
-    return array;
-}
-
-template <> std::shared_ptr<arrow::Array> to_array<int64_t>(const std::vector<int64_t>& data) {
-    arrow::Int64Builder builder;
+// Build an Arrow array from a vector of values
+template <typename Builder, typename Container>
+std::shared_ptr<arrow::Array> build_array(Builder builder, const Container& data) {
     arrow::Status status = builder.AppendValues(data);
     if (!status.ok()) {
         std::cerr << "Error appending values: " << status.ToString() << std::endl;
@@ -134,10 +62,10 @@ int main() {
 
     // Create a vector of column arrays
     arrow::ArrayVector columns({
-        to_array(int_values),
-        to_array(double_values),
-        to_array(string_values),
-        to_array(bool_values),
+        build_array(arrow::Int64Builder(), int_values),
+        build_array(arrow::DoubleBuilder(), double_values),
+        build_array(arrow::StringBuilder(), string_values),
+        build_array(arrow::BooleanBuilder(), bool_values),
     });
 
     // Create a table from the schema and columns
